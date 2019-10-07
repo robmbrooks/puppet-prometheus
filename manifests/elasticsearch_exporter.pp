@@ -95,6 +95,8 @@ class prometheus::elasticsearch_exporter (
   String $user,
   String $version,
   Boolean $use_kingpin,
+  Boolean $cnf_indices           = false,
+  Boolean $cnf_shards            = false,
   Boolean $purge_config_dir      = true,
   Boolean $restart_on_change     = true,
   Boolean $service_enable        = true,
@@ -127,7 +129,7 @@ class prometheus::elasticsearch_exporter (
     false => '-',
   }
 
-  $options = "${flag_prefix}es.uri=${cnf_uri} ${flag_prefix}es.timeout=${cnf_timeout} ${extra_options}"
+  $options = "${flag_prefix}es.uri=${cnf_uri} ${flag_prefix}es.timeout=${cnf_timeout} ${flag_prefix}es.indices=${cnf_indices} ${flag_prefix}es.shards=${cnf_shards} ${extra_options}"
 
   prometheus::daemon { 'elasticsearch_exporter':
     install_method     => $install_method,
