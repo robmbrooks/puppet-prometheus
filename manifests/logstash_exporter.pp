@@ -101,7 +101,7 @@ class prometheus::logstash_exporter(
   String[1] $scrape_job_name     = 'logstash',
 ) inherits prometheus {
 
-  $real_download_url = pick($download_url,"${download_url_base}/download/v${version}/${package_name}-${version}.${os}-${arch}.${download_extension}")
+  $real_download_url = pick($download_url,"${download_url_base}/${version}.${download_extension}")
   $notify_service = $restart_on_change ? {
     true    => Service['logstash_exporter'],
     default => undef,

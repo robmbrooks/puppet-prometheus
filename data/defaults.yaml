@@ -133,7 +133,7 @@ prometheus::haproxy_exporter::user: 'haproxy-user'
 prometheus::haproxy_exporter::version: '0.10.0'
 prometheus::logstash_exporter::cnf_scrape_uri: 'http://localhost:9600'
 prometheus::logstash_exporter::download_extension: 'tar.gz'
-prometheus::logstash_exporter::download_url_base: 'https://github.com/alxrem/prometheus-logstash-exporter/releases'
+prometheus::logstash_exporter::download_url_base: 'https://github.com/alxrem/prometheus-logstash-exporter/archive'
 prometheus::logstash_exporter::extra_groups: []
 prometheus::logstash_exporter::group: 'logstash-exporter'
 prometheus::logstash_exporter::package_ensure: 'latest'
