@@ -71,6 +71,8 @@
 #
 #  [*version*]
 #  The binary release version
+#
+#  Requires https://github.com/alxrem/prometheus-logstash-exporter
 
 class prometheus::logstash_exporter(
   String $download_extension,
