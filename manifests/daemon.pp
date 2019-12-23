@@ -1,95 +1,78 @@
-# Define: prometheus::daemon
-#
-# This define managed prometheus daemons that don't have their own class
-#
-#  [*version*]
+# @summary This define managed prometheus daemons that don't have their own class
+# @param version
 #  The binary release version
-#
-#  [*real_download_url*]
+# @param real_download_url
 #  Complete URL corresponding to the where the release binary archive can be downloaded
-#
-#  [*notify_service*]
+# @param notify_service
 #  The service to notify when something changes in this define
-#
-#  [*user*]
+# @param user
 #  User which runs the service
-#
-#  [*install_method*]
+# @param install_method
 #  Installation method: url or package
-#
-#  [*download_extension*]
+# @param download_extension
 #  Extension for the release binary archive
-#
-#  [*os*]
+# @param os
 #  Operating system (linux is the only one supported)
-#
-#  [*arch*]
+# @param arch
 #  Architecture (amd64 or i386)
-#
-#  [*bin_dir*]
+# @param bin_dir
 #  Directory where binaries are located
-#
-#  [*bin_name*]
+# @param bin_name
 #  The name of the binary to execute
-#
-#  [*package_name*]
+# @param package_name
 #  The binary package name
-#
-#  [*package_ensure*]
+# @param package_ensure
 #  If package, then use this for package ensure default 'installed'
-#
-#  [*manage_user*]
+# @param manage_user
 #  Whether to create user or rely on external code for that
-#
-#  [*extra_groups*]
+# @param extra_groups
 #  Extra groups of which the user should be a part
-#
-#  [*manage_group*]
+# @param manage_group
 #  Whether to create a group for or rely on external code for that
-#
-#  [*service_ensure*]
+# @param service_ensure
 #  State ensured for the service (default 'running')
-#
-#  [*service_enable*]
+# @param service_enable
 #  Whether to enable the service from puppet (default true)
-#
-#  [*manage_service*]
+# @param manage_service
 #  Should puppet manage the service? (default true)
-#
-#  [*extract_command*]
+# @param extract_command
 #  Custom command passed to the archive resource to extract the downloaded archive.
-#
+# @param init_style
+#  Service startup scripts style (e.g. rc, upstart or systemd).
+#  Can also be set to `none` when you don't want the class to create a startup script/unit_file for you.
+#  Typically this can be used when a package is already providing the file.
 define prometheus::daemon (
   String $version,
   Prometheus::Uri $real_download_url,
   $notify_service,
   String[1] $user,
   String[1] $group,
-  String $install_method               = $prometheus::install_method,
-  String $download_extension           = $prometheus::download_extension,
-  String $os                           = $prometheus::os,
-  String $arch                         = $prometheus::real_arch,
-  Stdlib::Absolutepath $bin_dir        = $prometheus::bin_dir,
-  String $bin_name                     = $name,
-  Optional[String] $package_name       = undef,
-  String $package_ensure               = 'installed',
-  Boolean $manage_user                 = true,
-  Array $extra_groups                  = [],
-  Boolean $manage_group                = true,
-  Boolean $purge                       = true,
-  String $options                      = '',
-  String $init_style                   = $prometheus::init_style,
-  String $service_ensure               = 'running',
-  Boolean $service_enable              = true,
-  Boolean $manage_service              = true,
-  Hash[String, Scalar] $env_vars       = {},
-  Optional[String] $env_file_path      = $prometheus::env_file_path,
-  Optional[String[1]] $extract_command = $prometheus::extract_command,
-  Boolean $export_scrape_job           = false,
-  Stdlib::Host $scrape_host            = $facts['fqdn'],
-  Optional[Stdlib::Port] $scrape_port  = undef,
-  String[1] $scrape_job_name           = $name,
-  Stdlib::Absolutepath $usershell      = $prometheus::usershell,
+  String $install_method                  = $prometheus::install_method,
+  String $download_extension              = $prometheus::download_extension,
+  String $os                              = $prometheus::os,
+  String $arch                            = $prometheus::real_arch,
+  Stdlib::Absolutepath $bin_dir           = $prometheus::bin_dir,
+  String $bin_name                        = $name,
+  Optional[String] $package_name          = undef,
+  String $package_ensure                  = 'installed',
+  Boolean $manage_user                    = true,
+  Array $extra_groups                     = [],
+  Boolean $manage_group                   = true,
+  Boolean $purge                          = true,
+  String $options                         = '',
+  Prometheus::Initstyle $init_style       = $facts['service_provider'],
+  Stdlib::Ensure::Service $service_ensure = 'running',
+  Boolean $service_enable                 = true,
+  Boolean $manage_service                 = true,
+  Hash[String, Scalar] $env_vars          = {},
+  Optional[String] $env_file_path         = $prometheus::env_file_path,
+  Optional[String[1]] $extract_command    = $prometheus::extract_command,
+  Boolean $export_scrape_job              = false,
+  Stdlib::Host $scrape_host               = $facts['networking']['fqdn'],
+  Optional[Stdlib::Port] $scrape_port     = undef,
+  String[1] $scrape_job_name              = $name,
+  Hash $scrape_job_labels                 = { 'alias' => $scrape_host },
+  Stdlib::Absolutepath $usershell         = $prometheus::usershell,
 ) {
 
   case $install_method {
@@ -121,19 +104,20 @@ define prometheus::daemon (
         }
       }
       file { "/opt/${name}-${version}.${os}-${arch}/${name}":
-          owner => 'root',
-          group => 0, # 0 instead of root because OS X uses "wheel".
-          mode  => '0555',
+        owner => 'root',
+        group => 0, # 0 instead of root because OS X uses "wheel".
+        mode  => '0555',
       }
       -> file { "${bin_dir}/${name}":
-          ensure => link,
-          notify => $notify_service,
-          target => "/opt/${name}-${version}.${os}-${arch}/${name}",
+        ensure => link,
+        notify => $notify_service,
+        target => "/opt/${name}-${version}.${os}-${arch}/${name}",
       }
     }
     'package': {
       package { $package_name:
         ensure => $package_ensure,
+        notify => $notify_service,
       }
       if $manage_user {
         User[$user] -> Package[$package_name]
@@ -164,8 +148,8 @@ define prometheus::daemon (
   }
 
 
-  case $init_style {
-    'upstart' : {
+  case $init_style { # lint:ignore:case_without_default
+    'upstart': {
       file { "/etc/init/${name}.conf":
         mode    => '0444',
         owner   => 'root',
@@ -181,7 +165,7 @@ define prometheus::daemon (
         mode   => '0755',
       }
     }
-    'systemd' : {
+    'systemd': {
       include 'systemd'
       systemd::unit_file {"${name}.service":
         content => template('prometheus/daemon.systemd.erb'),
@@ -189,7 +173,7 @@ define prometheus::daemon (
       }
     }
     # service_provider returns redhat on CentOS using sysv, https://tickets.puppetlabs.com/browse/PUP-5296
-    'sysv','redhat' : {
+    'sysv','redhat': {
       file { "/etc/init.d/${name}":
         mode    => '0555',
         owner   => 'root',
@@ -198,7 +182,7 @@ define prometheus::daemon (
         notify  => $notify_service,
       }
     }
-    'debian' : {
+    'debian': {
       file { "/etc/init.d/${name}":
         mode    => '0555',
         owner   => 'root',
@@ -207,7 +191,7 @@ define prometheus::daemon (
         notify  => $notify_service,
       }
     }
-    'sles' : {
+    'sles': {
       file { "/etc/init.d/${name}":
         mode    => '0555',
         owner   => 'root',
@@ -216,7 +200,7 @@ define prometheus::daemon (
         notify  => $notify_service,
       }
     }
-    'launchd' : {
+    'launchd': {
       file { "/Library/LaunchDaemons/io.${name}.daemon.plist":
         mode    => '0644',
         owner   => 'root',
@@ -225,9 +209,7 @@ define prometheus::daemon (
         notify  => $notify_service,
       }
     }
-    default : {
-      fail("I don't know how to create an init script for style ${init_style}")
-    }
+    'none': {}
   }
 
   if $env_file_path != undef {
@@ -248,10 +230,11 @@ define prometheus::daemon (
   $real_provider = $init_style ? {
     'sles'  => 'redhat',  # mimics puppet's default behaviour
     'sysv'  => 'redhat',  # all currently used cases for 'sysv' are redhat-compatible
+    'none'  => undef,
     default => $init_style,
   }
 
-  if $manage_service == true {
+  if $manage_service {
     service { $name:
       ensure   => $service_ensure,
       name     => $init_selector,
@@ -268,7 +251,7 @@ define prometheus::daemon (
     @@prometheus::scrape_job { "${scrape_host}:${scrape_port}":
       job_name => $scrape_job_name,
       targets  => ["${scrape_host}:${scrape_port}"],
-      labels   => { 'alias' => $scrape_host },
+      labels   => $scrape_job_labels,
     }
   }
 }

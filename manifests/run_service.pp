@@ -1,8 +1,4 @@
-# == Class prometheus::service
-#
-# This class is meant to be called from prometheus
-# It ensure the service is running
-#
+# @summary This class is meant to be called from prometheus. It ensure the service is running
 class prometheus::run_service {
 
   $init_selector = $prometheus::server::init_style ? {

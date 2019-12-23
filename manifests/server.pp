@@ -1,5 +1,4 @@
-# class to manage the actual prometheus server
-# this is a private class that gets called from the init.pp
+# @summary class to manage the actual prometheus server. This class gets called from the init.pp
 class prometheus::server (
   String $configname                                                            = $prometheus::configname,
   String $user                                                                  = $prometheus::user,
@@ -29,10 +28,10 @@ class prometheus::server (
   Stdlib::Absolutepath $env_file_path                                           = $prometheus::env_file_path,
   Hash $extra_alerts                                                            = $prometheus::extra_alerts,
   Boolean $service_enable                                                       = $prometheus::service_enable,
-  String $service_ensure                                                        = $prometheus::service_ensure,
+  Stdlib::Ensure::Service $service_ensure                                       = $prometheus::service_ensure,
   Boolean $manage_service                                                       = $prometheus::manage_service,
   Boolean $restart_on_change                                                    = $prometheus::restart_on_change,
-  String $init_style                                                            = $prometheus::init_style,
+  Prometheus::Initstyle $init_style                                             = $facts['service_provider'],
   Optional[String[1]] $extra_options                                            = $prometheus::extra_options,
   Hash $config_hash                                                             = $prometheus::config_hash,
   Hash $config_defaults                                                         = $prometheus::config_defaults,
@@ -94,6 +93,6 @@ class prometheus::server (
 
   Class['prometheus::install']
   -> Class['prometheus::config']
-  -> Class['prometheus::run_service']
+  -> Class['prometheus::run_service'] # Note: config must *not* be configured here to notify run_service.  Some resources in config.pp need to notify service_reload instead
   -> Class['prometheus::service_reload']
 }

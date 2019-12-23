@@ -1,11 +1,5 @@
 ---
 prometheus::usershell: '/usr/bin/nologin'
-prometheus::configname: 'prometheus.yaml'
-prometheus::service_enable: true
-prometheus::service_ensure: 'running'
-prometheus::manage_service: true
-prometheus::restart_on_change: true
-prometheus::init_style: '%{facts.service_provider}'
 prometheus::extra_options: ~
 prometheus::download_url: ~
 prometheus::arch: '%{facts.architecture}'
@@ -13,7 +7,7 @@ prometheus::manage_group: true
 prometheus::purge_config_dir: true
 prometheus::manage_user: true
 prometheus::bin_dir: '/usr/local/bin'
-prometheus::version: '2.11.1'
+prometheus::version: '2.14.0'
 prometheus::install_method: 'url'
 prometheus::manage_prometheus_server: false
 prometheus::extract_command: ~
@@ -186,11 +180,6 @@ prometheus::rabbitmq_exporter::rabbit_exporters:
   - 'node'
   - 'overview'
   - 'queue'
-prometheus::mysqld_exporter::cnf_config_path: '/etc/.my.cnf'
-prometheus::mysqld_exporter::cnf_host: 'localhost'
-prometheus::mysqld_exporter::cnf_password: 'password'
-prometheus::mysqld_exporter::cnf_port: 3306
-prometheus::mysqld_exporter::cnf_user: 'login'
 prometheus::mysqld_exporter::download_extension: 'tar.gz'
 prometheus::mysqld_exporter::download_url_base: 'https://github.com/prometheus/mysqld_exporter/releases'
 prometheus::mysqld_exporter::extra_groups: []
@@ -294,7 +283,7 @@ prometheus::redis_exporter::group: 'redis-exporter'
 prometheus::redis_exporter::package_ensure: 'latest'
 prometheus::redis_exporter::package_name: 'redis_exporter'
 prometheus::redis_exporter::user: 'redis-exporter'
-prometheus::redis_exporter::version: '0.11.2'
+prometheus::redis_exporter::version: '1.3.4'
 prometheus::user: 'prometheus'
 prometheus::varnish_exporter::download_extension: 'tar.gz'
 prometheus::varnish_exporter::download_url_base: 'https://github.com/jonnenauha/prometheus_varnish_exporter/releases'
@@ -312,11 +301,7 @@ prometheus::graphite_exporter::package_name: 'graphite_exporter'
 prometheus::graphite_exporter::user: 'graphite-exporter'
 prometheus::graphite_exporter::version: '0.2.0'
 prometheus::graphite_exporter::purge_config_dir: true
-prometheus::graphite_exporter::restart_on_change: true
-prometheus::graphite_exporter::service_enable: true
-prometheus::graphite_exporter::service_ensure: 'running'
 prometheus::graphite_exporter::manage_group: true
-prometheus::graphite_exporter::manage_service: true
 prometheus::graphite_exporter::manage_user: true
 prometheus::graphite_exporter::options: ''
 prometheus::collectd_exporter::download_extension: 'tar.gz'
@@ -327,11 +312,7 @@ prometheus::collectd_exporter::package_name: 'collectd_exporter'
 prometheus::collectd_exporter::user: 'collectd-exporter'
 prometheus::collectd_exporter::version: '0.4.0'
 prometheus::collectd_exporter::purge_config_dir: true
-prometheus::collectd_exporter::restart_on_change: true
-prometheus::collectd_exporter::service_enable: true
-prometheus::collectd_exporter::service_ensure: 'running'
 prometheus::collectd_exporter::manage_group: true
-prometheus::collectd_exporter::manage_service: true
 prometheus::collectd_exporter::manage_user: true
 prometheus::collectd_exporter::options: ''
 prometheus::apache_exporter::scrape_uri: 'http://localhost/server-status?auto'
