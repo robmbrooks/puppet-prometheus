@@ -49,8 +49,8 @@ define prometheus::daemon (
   String[1] $group,
   String $install_method                  = $prometheus::install_method,
   String $download_extension              = $prometheus::download_extension,
-  String $os                              = $prometheus::os,
-  String $arch                            = $prometheus::real_arch,
+  String[1] $os                           = $prometheus::os,
+  String[1] $arch                         = $prometheus::real_arch,
   Stdlib::Absolutepath $bin_dir           = $prometheus::bin_dir,
   String $bin_name                        = $name,
   Optional[String] $package_name          = undef,
@@ -170,6 +170,11 @@ define prometheus::daemon (
       systemd::unit_file {"${name}.service":
         content => template('prometheus/daemon.systemd.erb'),
         notify  => $notify_service,
+      }
+      # Puppet 5 doesn't have https://tickets.puppetlabs.com/browse/PUP-3483
+      # and camptocamp/systemd only creates this relationship when managing the service
+      if $manage_service and versioncmp($facts['puppetversion'],'6.1.0') < 0 {
+        Class['systemd::systemctl::daemon_reload'] -> Service[$name]
       }
     }
     # service_provider returns redhat on CentOS using sysv, https://tickets.puppetlabs.com/browse/PUP-5296
