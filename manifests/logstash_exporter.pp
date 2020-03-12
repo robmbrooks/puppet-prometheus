@@ -101,6 +101,7 @@ class prometheus::logstash_exporter(
   Boolean $export_scrape_job     = false,
   Stdlib::Port $scrape_port      = 9304,
   String[1] $scrape_job_name     = 'logstash',
+  String $bin_name               = 'prometheus-logstash-exporter',
 ) inherits prometheus {
 
   $real_download_url = pick($download_url,"${download_url_base}/${version}.${download_extension}")
@@ -119,6 +120,7 @@ class prometheus::logstash_exporter(
     arch               => $arch,
     real_download_url  => $real_download_url,
     bin_dir            => $bin_dir,
+    bin_name           => $bin_name,
     notify_service     => $notify_service,
     package_name       => $package_name,
     package_ensure     => $package_ensure,
