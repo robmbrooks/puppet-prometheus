@@ -64,24 +64,25 @@ class prometheus::elasticsearch_exporter (
   String $user,
   String $version,
   Boolean $use_kingpin,
-  Boolean $purge_config_dir               = true,
-  Boolean $restart_on_change              = true,
-  Boolean $service_enable                 = true,
-  Stdlib::Ensure::Service $service_ensure = 'running',
-  Prometheus::Initstyle $init_style       = $facts['service_provider'],
-  String $install_method                  = $prometheus::install_method,
-  Boolean $manage_group                   = true,
-  Boolean $manage_service                 = true,
-  Boolean $manage_user                    = true,
-  String[1] $os                           = downcase($facts['kernel']),
-  String $extra_options                   = '',
-  Optional[String] $download_url          = undef,
-  String[1] $arch                         = $prometheus::real_arch,
-  String $bin_dir                         = $prometheus::bin_dir,
-  Boolean $export_scrape_job              = false,
-  Stdlib::Port $scrape_port               = 9114,
-  String[1] $scrape_job_name              = 'elasticsearch',
-  Optional[Hash] $scrape_job_labels       = undef,
+  Boolean $cnf_indices           = false,
+  Boolean $cnf_shards            = false,
+  Boolean $purge_config_dir      = true,
+  Boolean $restart_on_change     = true,
+  Boolean $service_enable        = true,
+  String $service_ensure         = 'running',
+  String $init_style             = $prometheus::init_style,
+  String $install_method         = $prometheus::install_method,
+  Boolean $manage_group          = true,
+  Boolean $manage_service        = true,
+  Boolean $manage_user           = true,
+  String $os                     = $prometheus::os,
+  String $extra_options          = '',
+  Optional[String] $download_url = undef,
+  String $arch                   = $prometheus::real_arch,
+  String $bin_dir                = $prometheus::bin_dir,
+  Boolean $export_scrape_job     = false,
+  Stdlib::Port $scrape_port      = 9114,
+  String[1] $scrape_job_name     = 'elasticsearch',
 ) inherits prometheus {
 
   #Please provide the download_url for versions < 0.9.0
@@ -97,7 +98,7 @@ class prometheus::elasticsearch_exporter (
     false => '-',
   }
 
-  $options = "${flag_prefix}es.uri=${cnf_uri} ${flag_prefix}es.timeout=${cnf_timeout} ${extra_options}"
+  $options = "${flag_prefix}es.uri=${cnf_uri} ${flag_prefix}es.timeout=${cnf_timeout} ${flag_prefix}es.indices=${cnf_indices} ${flag_prefix}es.shards=${cnf_shards} ${extra_options}"
 
   prometheus::daemon { 'elasticsearch_exporter':
     install_method     => $install_method,
