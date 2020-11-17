@@ -1,6 +1,5 @@
 # @summary Configuration class for prometheus monitoring system
 class prometheus::config {
-
   assert_private()
 
   $max_open_files = $prometheus::server::max_open_files
@@ -37,7 +36,7 @@ class prometheus::config {
   }
 
   $invalid_options = $invalid_args
-  .filter |$key,$value| { $value or $key in $prometheus::server::extra_options}
+  .filter |$key,$value| { $value or $key in $prometheus::server::extra_options }
   .map    |$key,$value| { $key }
 
   unless empty($invalid_options) {
@@ -179,13 +178,13 @@ class prometheus::config {
       }
     }
     'systemd': {
-      systemd::unit_file {'prometheus.service':
+      systemd::unit_file { 'prometheus.service':
         content => epp("${module_name}/prometheus.systemd.epp", {
-          'user'           => $prometheus::server::user,
-          'group'          => $prometheus::server::group,
-          'daemon_flags'   => $daemon_flags,
-          'max_open_files' => $max_open_files,
-          'bin_dir'        => $prometheus::server::bin_dir,
+            'user'           => $prometheus::server::user,
+            'group'          => $prometheus::server::group,
+            'daemon_flags'   => $daemon_flags,
+            'max_open_files' => $max_open_files,
+            'bin_dir'        => $prometheus::server::bin_dir,
         }),
         notify  => $notify,
       }
@@ -195,7 +194,7 @@ class prometheus::config {
         Class['systemd::systemctl::daemon_reload'] -> Class['prometheus::run_service']
       }
     }
-    'sysv', 'redhat', 'debian', 'sles': {
+    'sysv', 'redhat', 'sles': {
       $content = $prometheus::server::init_style ? {
         'redhat' => template('prometheus/prometheus.sysv.erb'), # redhat and sysv share the same template file
         default  => template("prometheus/prometheus.${prometheus::server::init_style}.erb"),
@@ -239,9 +238,14 @@ class prometheus::config {
 
     $job_name = $job_definition['job_name']
 
-    Prometheus::Scrape_job <<| job_name == $job_name |>> {
+    $node_tag = $prometheus::server::collect_tag ? {
+      Undef   => 'prometheus::scrape_job',
+      default => $prometheus::server::collect_tag,
+    }
+
+    Prometheus::Scrape_job <<| job_name == $job_name and tag == $node_tag |>> {
       collect_dir => "${prometheus::config_dir}/file_sd_config.d",
-      notify      => Class['::prometheus::service_reload'],
+      notify      => Class['prometheus::service_reload'],
     }
   }
   # assemble the scrape jobs in a single list that gets appended to
@@ -249,9 +253,9 @@ class prometheus::config {
   $collected_scrape_jobs = $prometheus::server::collect_scrape_jobs.map |$job_definition| {
     $job_name = $job_definition['job_name']
     merge($job_definition, {
-      file_sd_configs => [{
-        files => [ "${prometheus::config_dir}/file_sd_config.d/${job_name}_*.yaml" ]
-      }]
+        file_sd_configs => [{
+            files => ["${prometheus::config_dir}/file_sd_config.d/${job_name}_*.yaml"]
+        }]
     })
   }
 
@@ -269,9 +273,9 @@ class prometheus::config {
       group        => $prometheus::server::group,
       mode         => $prometheus::server::config_mode,
       notify       => Class['prometheus::service_reload'],
+      show_diff    => $prometheus::config_show_diff,
       content      => template($prometheus::server::config_template),
       validate_cmd => "${prometheus::server::bin_dir}/promtool ${cfg_verify_cmd} %",
     }
   }
-
 }

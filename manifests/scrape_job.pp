@@ -19,12 +19,12 @@ define prometheus::scrape_job (
   Stdlib::Absolutepath $collect_dir  = undef,
 ) {
   $config = to_yaml([
-    {
-      targets => $targets,
-      labels  => $labels,
-    },
+      {
+        targets => $targets,
+        labels  => $labels,
+      },
   ])
-  file { "${collect_dir}/${name}.yaml":
+  file { "${collect_dir}/${job_name}_${name}.yaml":
     ensure  => file,
     owner   => 'root',
     group   => $prometheus::group,
