@@ -43,27 +43,30 @@
 #  Whether to enable the service from puppet (default true)
 # @param service_ensure
 #  State ensured for the service (default 'running')
+# @param service_name
+#  Name of the mesos exporter service (default 'mesos_exporter')
 # @param user
 #  User which runs the service
 # @param version
 #  The binary release version
 class prometheus::mesos_exporter (
-  String $server_type,
-  String $cnf_scrape_uri,
-  String $download_extension,
-  String $download_url_base,
+  String[1] $server_type,
+  String[1] $cnf_scrape_uri,
+  String[1] $download_extension,
+  String[1] $download_url_base,
   Array $extra_groups,
-  String $group,
-  String $package_ensure,
-  String $package_name,
-  String $user,
-  String $version,
+  String[1] $group,
+  String[1] $package_ensure,
+  String[1] $package_name,
+  String[1] $service_name,
+  String[1] $user,
+  String[1] $version,
   Boolean $purge_config_dir               = true,
   Boolean $restart_on_change              = true,
   Boolean $service_enable                 = true,
   Stdlib::Ensure::Service $service_ensure = 'running',
   Prometheus::Initstyle $init_style       = $facts['service_provider'],
-  String $install_method                  = $prometheus::install_method,
+  Prometheus::Install $install_method     = $prometheus::install_method,
   Boolean $manage_group                   = true,
   Boolean $manage_service                 = true,
   Boolean $manage_user                    = true,
@@ -71,16 +74,16 @@ class prometheus::mesos_exporter (
   String $extra_options                   = '',
   Optional[String] $download_url          = undef,
   String[1] $arch                         = $prometheus::real_arch,
-  String $bin_dir                         = $prometheus::bin_dir,
+  String[1] $bin_dir                      = $prometheus::bin_dir,
   Boolean $export_scrape_job              = false,
+  Optional[Stdlib::Host] $scrape_host     = undef,
   Stdlib::Port $scrape_port               = 9105,
   String[1] $scrape_job_name              = 'mesos',
   Optional[Hash] $scrape_job_labels       = undef,
 ) inherits prometheus {
-
   $real_download_url    = pick($download_url,"${download_url_base}/download/v${version}/${package_name}-${version}.${os}-${arch}.${download_extension}")
   $notify_service = $restart_on_change ? {
-    true    => Service['mesos_exporter'],
+    true    => Service[$service_name],
     default => undef,
   }
 
@@ -109,6 +112,7 @@ class prometheus::mesos_exporter (
     service_enable     => $service_enable,
     manage_service     => $manage_service,
     export_scrape_job  => $export_scrape_job,
+    scrape_host        => $scrape_host,
     scrape_port        => $scrape_port,
     scrape_job_name    => $scrape_job_name,
     scrape_job_labels  => $scrape_job_labels,

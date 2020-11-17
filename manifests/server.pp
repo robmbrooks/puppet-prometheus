@@ -29,6 +29,7 @@ class prometheus::server (
   Hash $extra_alerts                                                            = $prometheus::extra_alerts,
   Boolean $service_enable                                                       = $prometheus::service_enable,
   Stdlib::Ensure::Service $service_ensure                                       = $prometheus::service_ensure,
+  String[1] $service_name                                                       = $prometheus::service_name,
   Boolean $manage_service                                                       = $prometheus::manage_service,
   Boolean $restart_on_change                                                    = $prometheus::restart_on_change,
   Prometheus::Initstyle $init_style                                             = $facts['service_provider'],
@@ -44,18 +45,19 @@ class prometheus::server (
   Boolean $manage_config                                                        = $prometheus::manage_config,
   Optional[Variant[Stdlib::HTTPurl, Stdlib::Unixpath, String[1]]] $external_url = $prometheus::external_url,
   Optional[Array[Hash[String[1], Any]]] $collect_scrape_jobs                    = $prometheus::collect_scrape_jobs,
+  Optional[String[1]] $collect_tag                                              = $prometheus::collect_tag,
+  Optional[Integer] $max_open_files                                             = $prometheus::max_open_files,
   Stdlib::Absolutepath $usershell                                               = $prometheus::usershell,
 ) inherits prometheus {
-
-  if( versioncmp($version, '1.0.0') == -1 ){
+  if( versioncmp($version, '1.0.0') == -1 ) {
     $real_download_url = pick($download_url,
-      "${download_url_base}/download/${version}/${package_name}-${version}.${os}-${arch}.${download_extension}")
+    "${download_url_base}/download/${version}/${package_name}-${version}.${os}-${arch}.${download_extension}")
   } else {
     $real_download_url = pick($download_url,
-      "${download_url_base}/download/v${version}/${package_name}-${version}.${os}-${arch}.${download_extension}")
+    "${download_url_base}/download/v${version}/${package_name}-${version}.${os}-${arch}.${download_extension}")
   }
   $notify_service = $restart_on_change ? {
-    true    => Service['prometheus'],
+    true    => Service[$service_name],
     default => undef,
   }
 

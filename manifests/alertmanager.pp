@@ -93,49 +93,68 @@
 class prometheus::alertmanager (
   Stdlib::Absolutepath $config_dir,
   Stdlib::Absolutepath $config_file,
-  String $download_extension,
+  String[1] $download_extension,
   Prometheus::Uri $download_url_base,
   Array $extra_groups,
   Hash $global,
-  String $group,
+  String[1] $group,
   Array $inhibit_rules,
-  String $package_ensure,
-  String $package_name,
+  String[1] $package_ensure,
+  String[1] $package_name,
   Array $receivers,
   Hash $route,
   Stdlib::Absolutepath $storage_path,
   Array $templates,
-  String $user,
-  String $version,
+  String[1] $user,
+  String[1] $version,
   Boolean $service_enable                 = true,
   Stdlib::Ensure::Service $service_ensure = 'running',
   String[1] $service_name                 = 'alertmanager',
   Boolean $restart_on_change              = true,
+  Boolean $reload_on_change               = false,
   Boolean $purge_config_dir               = true,
   Boolean $manage_config                  = true,
   Prometheus::Initstyle $init_style       = $facts['service_provider'],
-  String $install_method                  = $prometheus::install_method,
+  String[1] $install_method               = $prometheus::install_method,
   Boolean $manage_group                   = true,
   Boolean $manage_service                 = true,
   Boolean $manage_user                    = true,
   String[1] $os                           = $prometheus::os,
   String $extra_options                   = '',
   Optional[String] $download_url          = undef,
-  String $config_mode                     = $prometheus::config_mode,
+  String[1] $config_mode                  = $prometheus::config_mode,
   String[1] $arch                         = $prometheus::real_arch,
   Stdlib::Absolutepath $bin_dir           = $prometheus::bin_dir,
 ) inherits prometheus {
-
-  if( versioncmp($version, '0.3.0') == -1 ){
+  if( versioncmp($version, '0.3.0') == -1 ) {
     $real_download_url    = pick($download_url,
-      "${download_url_base}/download/${version}/${package_name}-${version}.${os}-${arch}.${download_extension}")
+    "${download_url_base}/download/${version}/${package_name}-${version}.${os}-${arch}.${download_extension}")
   } else {
     $real_download_url    = pick($download_url,
-      "${download_url_base}/download/v${version}/${package_name}-${version}.${os}-${arch}.${download_extension}")
+    "${download_url_base}/download/v${version}/${package_name}-${version}.${os}-${arch}.${download_extension}")
   }
   $notify_service = $restart_on_change ? {
     true    => Service[$service_name],
     default => undef,
+  }
+
+  $alertmanager_reload = $prometheus::init_style ? {
+    'systemd'              => "systemctl reload-or-restart ${service_name}",
+    /^(upstart|none)$/     => "service ${service_name} reload",
+    /^(sysv|redhat|sles)$/ => "/etc/init.d/${service_name} reload",
+    'launchd'              => "launchctl stop ${service_name} && launchctl start ${service_name}",
+  }
+
+  exec { 'alertmanager-reload':
+    command     => $alertmanager_reload,
+    path        => ['/usr/bin', '/bin', '/usr/sbin', '/sbin'],
+    refreshonly => true,
+  }
+
+  if $reload_on_change {
+    $_notify_service = Exec['alertmanager-reload']
+  } else {
+    $_notify_service = $notify_service
   }
 
   file { $config_dir:
@@ -148,33 +167,32 @@ class prometheus::alertmanager (
 
   if (( versioncmp($version, '0.10.0') >= 0 ) and ( $install_method == 'url' )) {
     # If version >= 0.10.0 then install amtool - Alertmanager validation tool
-    file {"${bin_dir}/amtool":
+    file { "${bin_dir}/amtool":
       ensure => link,
       target => "/opt/${package_name}-${version}.${os}-${arch}/amtool",
     }
 
     if $manage_config {
       file { $config_file:
-        ensure       => present,
+        ensure       => file,
         owner        => 'root',
         group        => $group,
         mode         => $config_mode,
         content      => template('prometheus/alertmanager.yaml.erb'),
-        notify       => $notify_service,
+        notify       => $_notify_service,
         require      => File["${bin_dir}/amtool", $config_dir],
         validate_cmd => "${bin_dir}/amtool check-config --alertmanager.url='' %",
       }
     }
   } else {
-
     if $manage_config {
       file { $config_file:
-        ensure  => present,
+        ensure  => file,
         owner   => 'root',
         group   => $group,
         mode    => $config_mode,
         content => template('prometheus/alertmanager.yaml.erb'),
-        notify  => $notify_service,
+        notify  => $_notify_service,
         require => File[$config_dir],
       }
     }
@@ -191,17 +209,17 @@ class prometheus::alertmanager (
     file { $storage_path:
       ensure => 'directory',
       owner  => $user,
-      group  =>  $group,
+      group  => $group,
       mode   => '0755',
     }
 
-    if( versioncmp($version, '0.12.0') == 1 ){
+    if( versioncmp($version, '0.12.0') == 1 ) {
       $options = "--config.file=${prometheus::alertmanager::config_file} --storage.path=${prometheus::alertmanager::storage_path} ${prometheus::alertmanager::extra_options}"
     } else {
       $options = "-config.file=${prometheus::alertmanager::config_file} -storage.path=${prometheus::alertmanager::storage_path} ${prometheus::alertmanager::extra_options}"
     }
   } else {
-    if( versioncmp($prometheus::alertmanager::version, '0.12.0') == 1 ){
+    if( versioncmp($prometheus::alertmanager::version, '0.12.0') == 1 ) {
       $options = "--config.file=${prometheus::alertmanager::config_file} ${prometheus::alertmanager::extra_options}"
     } else {
       $options = "-config.file=${prometheus::alertmanager::config_file} ${prometheus::alertmanager::extra_options}"

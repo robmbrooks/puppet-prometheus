@@ -41,18 +41,21 @@
 #  Whether to enable the service from puppet (default true)
 # @param service_ensure
 #  State ensured for the service (default 'running')
+# @param service_name
+#  Name of the nginx-vts exporter service (default 'nginx-vts-exporter')
 # @param user
 #  User which runs the service
 # @param version
 #  The binary release version
-class prometheus::nginx_vts_exporter(
+class prometheus::nginx_vts_exporter (
   String           $nginx_scrape_uri,
   String           $download_extension,
   String           $download_url_base,
   Array            $extra_groups,
   String           $group,
   String           $package_ensure,
-  String           $package_name,
+  String[1]        $package_name,
+  String[1]        $service_name,
   String           $user,
   String           $version,
   Boolean          $purge_config_dir  = true,
@@ -70,14 +73,14 @@ class prometheus::nginx_vts_exporter(
   String           $arch              = $prometheus::real_arch,
   String           $bin_dir           = $prometheus::bin_dir,
   Boolean $export_scrape_job          = false,
+  Optional[Stdlib::Host] $scrape_host = undef,
   Stdlib::Port $scrape_port           = 9913,
   String[1] $scrape_job_name          = 'nginx_vts',
   Optional[Hash] $scrape_job_labels   = undef,
 ) inherits prometheus {
-
   $real_download_url = pick($download_url,"${download_url_base}/download/v${version}/${package_name}-${version}.${os}-${arch}.${download_extension}")
   $notify_service = $restart_on_change ? {
-    true    => Service['nginx-vts-exporter'],
+    true    => Service[$service_name],
     default => undef,
   }
 
@@ -106,9 +109,9 @@ class prometheus::nginx_vts_exporter(
     service_enable     => $service_enable,
     manage_service     => $manage_service,
     export_scrape_job  => $export_scrape_job,
+    scrape_host        => $scrape_host,
     scrape_port        => $scrape_port,
     scrape_job_name    => $scrape_job_name,
     scrape_job_labels  => $scrape_job_labels,
   }
-
 }

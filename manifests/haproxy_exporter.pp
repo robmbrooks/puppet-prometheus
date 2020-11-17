@@ -41,26 +41,29 @@
 #  Whether to enable the service from puppet (default true)
 # @param service_ensure
 #  State ensured for the service (default 'running')
+# @param service_name
+#  Name of the haproxy exporter service (default 'haproxy_exporter')
 # @param user
 #  User which runs the service
 # @param version
 #  The binary release version
-class prometheus::haproxy_exporter(
+class prometheus::haproxy_exporter (
   Variant[Stdlib::HTTPUrl, Pattern[/unix:(?:\/.+)+/]] $cnf_scrape_uri,
-  String $download_extension,
+  String[1] $download_extension,
   Array $extra_groups,
-  String $group,
-  String $package_ensure,
-  String $package_name,
-  String $user,
-  String $version,
+  String[1] $group,
+  String[1] $package_ensure,
+  String[1] $package_name,
+  String[1] $user,
+  String[1] $version,
+  String[1] $service_name,
   Prometheus::Uri $download_url_base,
   Boolean $purge_config_dir               = true,
   Boolean $restart_on_change              = true,
   Boolean $service_enable                 = true,
   Stdlib::Ensure::Service $service_ensure = 'running',
   Prometheus::Initstyle $init_style       = $facts['service_provider'],
-  String $install_method                  = $prometheus::install_method,
+  Prometheus::Install $install_method     = $prometheus::install_method,
   Boolean $manage_group                   = true,
   Boolean $manage_service                 = true,
   Boolean $manage_user                    = true,
@@ -70,20 +73,20 @@ class prometheus::haproxy_exporter(
   String[1] $arch                         = $prometheus::real_arch,
   Stdlib::Absolutepath $bin_dir           = $prometheus::bin_dir,
   Boolean $export_scrape_job              = false,
+  Optional[Stdlib::Host] $scrape_host     = undef,
   Stdlib::Port $scrape_port               = 9101,
   String[1] $scrape_job_name              = 'haproxy',
   Optional[Hash] $scrape_job_labels       = undef,
 ) inherits prometheus {
-
   $real_download_url = pick($download_url,"${download_url_base}/download/v${version}/${package_name}-${version}.${os}-${arch}.${download_extension}")
   $notify_service = $restart_on_change ? {
-    true    => Service['haproxy_exporter'],
+    true    => Service[$service_name],
     default => undef,
   }
 
   $options = "--haproxy.scrape-uri=\"${cnf_scrape_uri}\" ${extra_options}"
 
-  prometheus::daemon { 'haproxy_exporter':
+  prometheus::daemon { $service_name:
     install_method     => $install_method,
     version            => $version,
     download_extension => $download_extension,
@@ -106,9 +109,9 @@ class prometheus::haproxy_exporter(
     service_enable     => $service_enable,
     manage_service     => $manage_service,
     export_scrape_job  => $export_scrape_job,
+    scrape_host        => $scrape_host,
     scrape_port        => $scrape_port,
     scrape_job_name    => $scrape_job_name,
     scrape_job_labels  => $scrape_job_labels,
   }
-
 }

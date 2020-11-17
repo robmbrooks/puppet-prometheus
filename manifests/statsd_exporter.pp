@@ -41,6 +41,8 @@
 #  Whether to enable the service from puppet (default true)
 # @param service_ensure
 #  State ensured for the service (default 'running')
+# @param service_name
+#  Name of the statsd exporter service (default 'statsd_exporter')
 # @param mappings
 #  The hiera array for mappings:
 #    - map: 'test.dispatcher.*.*.*'
@@ -53,37 +55,38 @@
 # @param version
 #  The binary release version
 class prometheus::statsd_exporter (
-  String $download_extension,
+  String[1] $download_extension,
   Prometheus::Uri $download_url_base,
   Array $extra_groups,
-  String $group,
+  String[1] $group,
   Stdlib::Absolutepath $mapping_config_path,
-  String $package_ensure,
-  String $package_name,
+  String[1] $package_ensure,
+  String[1] $package_name,
+  String[1] $service_name,
   Array[Hash] $mappings,
-  String $user,
-  String $version,
+  String[1] $user,
+  String[1] $version,
   String[1] $arch                         = $prometheus::real_arch,
   Stdlib::Absolutepath $bin_dir           = $prometheus::bin_dir,
-  String $config_mode                     = $prometheus::config_mode,
+  String[1] $config_mode                  = $prometheus::config_mode,
   Boolean $purge_config_dir               = true,
   Boolean $restart_on_change              = true,
   Boolean $service_enable                 = true,
   Stdlib::Ensure::Service $service_ensure = 'running',
   String[1] $os                           = downcase($facts['kernel']),
   Prometheus::Initstyle $init_style       = $facts['service_provider'],
-  String $install_method                  = $prometheus::install_method,
+  Prometheus::Install $install_method     = $prometheus::install_method,
   Boolean $manage_group                   = true,
   Boolean $manage_service                 = true,
   Boolean $manage_user                    = true,
   String $extra_options                   = '',
   Optional[Prometheus::Uri] $download_url = undef,
   Boolean $export_scrape_job              = false,
+  Optional[Stdlib::Host] $scrape_host     = undef,
   Stdlib::Port $scrape_port               = 9102,
   String[1] $scrape_job_name              = 'statsd',
   Optional[Hash] $scrape_job_labels       = undef,
 ) inherits prometheus {
-
   # Prometheus added a 'v' on the realease name at 0.4.0 and changed the configuration format to yaml in 0.5.0
   if versioncmp ($version, '0.5.0') == -1 {
     fail("I only support statsd_exporter version '0.5.0' or higher")
@@ -92,7 +95,7 @@ class prometheus::statsd_exporter (
   $real_download_url = pick($download_url,"${download_url_base}/download/v${version}/${package_name}-${version}.${os}-${arch}.${download_extension}")
 
   $notify_service = $restart_on_change ? {
-    true    => Service['statsd_exporter'],
+    true    => Service[$service_name],
     default => undef,
   }
 
@@ -101,7 +104,7 @@ class prometheus::statsd_exporter (
     mode    => $config_mode,
     owner   => 'root',
     group   => $group,
-    content => to_yaml({ mappings => $mappings }),
+    content => to_yaml( { mappings => $mappings }),
     notify  => $notify_service,
   }
 
@@ -136,6 +139,7 @@ class prometheus::statsd_exporter (
     service_enable     => $service_enable,
     manage_service     => $manage_service,
     export_scrape_job  => $export_scrape_job,
+    scrape_host        => $scrape_host,
     scrape_port        => $scrape_port,
     scrape_job_name    => $scrape_job_name,
     scrape_job_labels  => $scrape_job_labels,

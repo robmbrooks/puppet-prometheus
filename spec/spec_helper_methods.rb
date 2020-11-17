@@ -4,9 +4,9 @@ def os_specific_facts(facts)
     { service_provider: 'systemd' }
   when 'Debian'
     case facts[:os]['release']['major']
-    when '8'
-      { service_provider: 'systemd' }
     when '9'
+      { service_provider: 'systemd' }
+    when '10'
       { service_provider: 'systemd' }
     when '16.04'
       { service_provider: 'systemd' }
